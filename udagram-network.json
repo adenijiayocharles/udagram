@@ -1,7 +1,7 @@
 [
     {
         "ParameterKey": "EnvironmentName",
-        "ParameterValue": "UdagramWebAppProject"
+        "ParameterValue": "UdagramCFProject"
     },
     {
         "ParameterKey": "VPCCidr",
