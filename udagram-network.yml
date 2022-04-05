@@ -4,31 +4,31 @@ Parameters:
   EnvironmentName:
     Description: An environment name that will be prefixed to resource names
     Type: String
-  VPCCidr:
+  VpcCIDR:
     Description: IP range for the VPC
     Type: String
     Default: 10.0.0.0/16
-  PublicSubnet1Cidr:
+  PublicSubnet1CIDR:
     Description: IP address range for public subnet 1 in the first AZ
     Type: String
     Default: 10.0.0.0/24
-  PublicSubnet2Cidr:
+  PublicSubnet2CIDR:
     Description: IP address range for public subnet 2 in the second AZ
     Type: String
-    Default: 10.0.0.1/24
-  PrivateSubnet1Cidr:
+    Default: 10.0.1.0/24
+  PrivateSubnet1CIDR:
     Description: IP address range for the private subnet 1 in the first AZ
     Type: String
-    Default: 10.0.0.2/24
-  PrivateSubnet2Cidr:
+    Default: 10.0.2.0/24
+  PrivateSubnet2CIDR:
     Description: IP address range for the private subnet 2 in the second AZ
     Type: String
-    Default: 10.0.0.3/24
+    Default: 10.0.3.0/24
 Resources:
   VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: !Ref VPCCidr
+      CidrBlock: !Ref VpcCIDR
       EnableDnsHostnames: true
       Tags:
         - Key: Name
@@ -49,7 +49,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       AvailabilityZone: !Select [0, !GetAZs ""]
-      CidrBlock: !Ref PublicSubnet1Cidr
+      CidrBlock: !Ref PublicSubnet1CIDR
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
@@ -59,7 +59,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       AvailabilityZone: !Select [1, !GetAZs ""]
-      CidrBlock: !Ref PublicSubnet2Cidr
+      CidrBlock: !Ref PublicSubnet2CIDR
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
@@ -67,7 +67,7 @@ Resources:
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: !Ref PrivateSubnet1Cidr
+      CidrBlock: !Ref PrivateSubnet1CIDR
       VpcId: !Ref VPC
       AvailabilityZone: !Select [0, !GetAZs ""]
       MapPublicIpOnLaunch: false
@@ -78,7 +78,7 @@ Resources:
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: !Ref PrivateSubnet2Cidr
+      CidrBlock: !Ref PrivateSubnet2CIDR
       VpcId: !Ref VPC
       AvailabilityZone: !Select [1, !GetAZs ""]
       MapPublicIpOnLaunch: false
