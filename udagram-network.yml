@@ -25,6 +25,7 @@ Parameters:
     Type: String
     Default: 10.0.3.0/24
 Resources:
+  #VPC
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -33,17 +34,23 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref EnvironmentName
+
+  #INTERNET GATEWAY
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
           Value: !Ref EnvironmentName
+
+  # INTERNET GATEWAY TO VPC ATTACHMENT
   InternetGatewayVPCAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
+
+  # PUBLIC SUBNET 1
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -54,6 +61,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} Public Subnet (AZ1)
+
+  # PUBLIC SUBNET 2
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
@@ -64,6 +73,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} Public Subnet (AZ2)
+
+  # PRIVATE SUBNET 1
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -75,6 +86,7 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName} Private Subnet (AZ1)
 
+  # PRIVATE SUBNET 2
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
@@ -85,3 +97,16 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} Private Subnet (AZ2)
+
+  # ELASTIC IPS
+  NatGateway1EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayVPCAttachment
+    Properties:
+      Domain: vpc
+
+  NatGateway2EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayVPCAttachment
+    Properties:
+      Domain: vpc
