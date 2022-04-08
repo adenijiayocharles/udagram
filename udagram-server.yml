@@ -3,7 +3,7 @@ Description: >
   This stack creates server infrastructure for Udagram
 
 Parameters:
-  EnvironmentName: 
+  EnvironmentName:
     Description: An environment name that will be prefixed to all resources name
     Type: String
     Default: UdagramCFProject
@@ -15,7 +15,7 @@ Resources:
     Properties:
       GroupName: Load balancer security group
       GroupDescription: Allows http traffic in and out of the load balancer
-      VpcId: 
+      VpcId:
         Fn::ImportValue: !Sub "${EnvironmentName}-VPCID"
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -27,14 +27,14 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
-  
+
   # Webserver Security Group
   WebServerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: UdagramWebServer Security Group
       GroupDescription: This is the security group for the Udagram web application.
-      VpcId: 
+      VpcId:
         Fn::ImportValue: !Sub "${EnvironmentName}-VPCID"
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -47,3 +47,34 @@ Resources:
           ToPort: 65535
           CidrIp: 0.0.0.0/0
 
+  # IAM Permissions
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref S3ReadOnlyRole
+  S3ReadOnlyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Path: "/"
+  
+  S3AccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: S3AccessPolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "s3:*"
+            Resource: "*"
+      Roles: 
+        - !Ref S3ReadOnlyRole
