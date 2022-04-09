@@ -7,6 +7,20 @@ Parameters:
     Description: An environment name that will be prefixed to all resources name
     Type: String
     Default: UdagramCFProject
+  AMIID:
+    Description: The operating system of our server
+    Type: String
+  InstanceType:
+    Description: The instance tyoe of our ec2 server
+    Type: String
+  ASGMinSize:
+    Description: The minimum number of servers in our auto scaling group
+    Type: String
+    Default: 4
+  ASGMaxSize:
+    Description: The maximum number of servers in our auto scaling group
+    Type: String
+    Default: 6
 
 Resources:
   # Application load balancer security group
@@ -65,7 +79,7 @@ Resources:
               Service: ec2.amazonaws.com
             Action: sts:AssumeRole
       Path: "/"
-  
+
   S3AccessPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -76,5 +90,48 @@ Resources:
           - Effect: Allow
             Action: "s3:*"
             Resource: "*"
-      Roles: 
+      Roles:
         - !Ref S3ReadOnlyRole
+
+  # Launch Configuration
+  ASGLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update -y
+          apt-get install unzip awscli -y
+          apt-get install apache2 -y
+          sudo systemctl start apache2.service
+          cd /var/www/html
+          aws s3 cp s3://udagram-charles/index.html .
+      ImageId: !Ref AMIID
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      InstanceType: !Ref InstanceType
+      SecurityGroups:
+        - Ref: WebServerSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: "/dev/sdk"
+          Ebs:
+            VolumeSize: 10
+
+  WebAppAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: UdagramASG
+      LaunchConfigurationName:
+        Ref: ASGLaunchConfiguration
+      MaxSize: !Ref ASGMaxSize
+      MinSize: !Ref ASGMinSize
+      VPCZoneIdentifier:
+        - Fn::ImportValue: !Sub "${EnvironmentName}-PRIV-NETS"
+  
+  WebApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Subnets:
+      - Fn::ImportValue: !Sub "${EnvironmentName}-PUB1-SN"
+      - Fn::ImportValue: !Sub "${EnvironmentName}-PUB2-SN"
+      SecurityGroups:
+      - Ref: LoadBalancerSecurityGroup
