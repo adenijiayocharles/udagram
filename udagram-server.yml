@@ -16,11 +16,9 @@ Parameters:
   ASGMinSize:
     Description: The minimum number of servers in our auto scaling group
     Type: String
-    Default: 4
   ASGMaxSize:
     Description: The maximum number of servers in our auto scaling group
     Type: String
-    Default: 6
 
 Resources:
   # Application load balancer security group
@@ -101,7 +99,7 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           apt-get update -y
-          apt-get install unzip awscli -y
+          apt-get install awscli -y
           apt-get install apache2 -y
           sudo systemctl start apache2.service
           cd /var/www/html
@@ -126,12 +124,53 @@ Resources:
       MinSize: !Ref ASGMinSize
       VPCZoneIdentifier:
         - Fn::ImportValue: !Sub "${EnvironmentName}-PRIV-NETS"
-  
+      TargetGroupARNs:
+        - Ref: WebApplicationLoadBalancerTargetGroup
+
   WebApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Subnets:
-      - Fn::ImportValue: !Sub "${EnvironmentName}-PUB1-SN"
-      - Fn::ImportValue: !Sub "${EnvironmentName}-PUB2-SN"
+        - Fn::ImportValue: !Sub "${EnvironmentName}-PUB1-SN"
+        - Fn::ImportValue: !Sub "${EnvironmentName}-PUB2-SN"
       SecurityGroups:
-      - Ref: LoadBalancerSecurityGroup
+        - Ref: LoadBalancerSecurityGroup
+
+  WebApplicationLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn:
+            Ref: WebApplicationLoadBalancerTargetGroup
+      LoadBalancerArn:
+        Ref: WebApplicationLoadBalancer
+      Port: "80"
+      Protocol: HTTP
+
+  WebApplicationLoadBalancerListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref 'WebApplicationLoadBalancerTargetGroup'
+      Conditions:
+        - Field: path-pattern
+          Values: [/]
+      ListenerArn: !Ref 'WebApplicationLoadBalancerListener'
+      Priority: 1
+
+  WebApplicationLoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 8
+      HealthyThresholdCount: 2
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: 5
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: "${EnvironmentName}-VPCID"
